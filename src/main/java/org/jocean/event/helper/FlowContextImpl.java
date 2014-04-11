@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
  * @author isdom
  *
  */
-final class FlowContextImpl implements FlowContext, Comparable<FlowContextImpl> {
+public class FlowContextImpl implements FlowContext, Comparable<FlowContextImpl> {
 
 	interface StatusReactor {
 	    public boolean checkIfExceedLimit(final FlowContextImpl ctx);
