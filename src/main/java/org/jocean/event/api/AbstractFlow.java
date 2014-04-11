@@ -117,8 +117,9 @@ public abstract class AbstractFlow<FLOW>
 		return	this._event;
 	}
 	
-	protected EventHandler	currentEventHandler() {
-		return	this._handler;
+	@SuppressWarnings("unchecked")
+    protected <T> T	currentEventHandler() {
+		return	(T)this._handler;
 	}
 
 	protected void 	setEndReason(final Object endreason) {
