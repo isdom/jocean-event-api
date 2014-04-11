@@ -43,7 +43,7 @@ public class FlowContextImpl implements FlowContext, Comparable<FlowContextImpl>
     private static final Logger LOG = 
     		LoggerFactory.getLogger(FlowContextImpl.class);
 
-	FlowContextImpl(
+	public FlowContextImpl(
 	        final Object flow, 
 	        final ExectionLoop exectionLoop, 
 			final StatusReactor statusReactor,
@@ -132,7 +132,7 @@ public class FlowContextImpl implements FlowContext, Comparable<FlowContextImpl>
         }
     }
     	
-    FlowContextImpl setCurrentHandler(
+    public FlowContextImpl setCurrentHandler(
             final EventHandler handler, 
             final String        causeEvent, 
             final Object[]      causeArgs) {
