@@ -32,9 +32,13 @@ public abstract class AbstractFlow<FLOW>
 		InterfaceSource
 		{
 
+    @SuppressWarnings("unchecked")
     @Override
 	public <INTF> INTF queryInterfaceInstance(final Class<INTF> intfCls) {
-		@SuppressWarnings("unchecked")
+        if ( intfCls.equals(EventReceiver.class)) {
+            return (INTF)selfEventReceiver();
+        }
+        
 		INTF ret = (INTF)this._adapters.get(intfCls);
 		
 		if ( null != ret ) {
