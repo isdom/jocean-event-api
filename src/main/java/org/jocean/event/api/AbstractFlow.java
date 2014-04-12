@@ -14,9 +14,9 @@ import org.jocean.event.api.internal.EventInvoker;
 import org.jocean.event.api.internal.EventNameAware;
 import org.jocean.event.api.internal.ExectionLoopAware;
 import org.jocean.event.api.internal.FlowLifecycleAware;
-import org.jocean.event.api.internal.InterfaceSource;
 import org.jocean.idiom.COWCompositeSupport;
 import org.jocean.idiom.ExectionLoop;
+import org.jocean.idiom.InterfaceSource;
 import org.jocean.idiom.Visitor;
 
 /**
