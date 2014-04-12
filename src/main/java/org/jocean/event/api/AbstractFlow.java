@@ -14,6 +14,7 @@ import org.jocean.event.api.internal.EventInvoker;
 import org.jocean.event.api.internal.EventNameAware;
 import org.jocean.event.api.internal.ExectionLoopAware;
 import org.jocean.event.api.internal.FlowLifecycleAware;
+import org.jocean.event.api.internal.InterfaceSource;
 import org.jocean.idiom.COWCompositeSupport;
 import org.jocean.idiom.ExectionLoop;
 import org.jocean.idiom.Visitor;
@@ -27,10 +28,12 @@ public abstract class AbstractFlow<FLOW>
 		EventHandlerAware, 
 		FlowLifecycleAware, 
 		EndReasonSource,
-		ExectionLoopAware
+		ExectionLoopAware,
+		InterfaceSource
 		{
 
-	public <INTF> INTF getInterfaceAdapter(final Class<INTF> intfCls) {
+    @Override
+	public <INTF> INTF queryInterfaceInstance(final Class<INTF> intfCls) {
 		@SuppressWarnings("unchecked")
 		INTF ret = (INTF)this._adapters.get(intfCls);
 		
