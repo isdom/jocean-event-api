@@ -3,7 +3,6 @@
  */
 package org.jocean.event.api;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -26,22 +25,13 @@ public class BizStep implements Cloneable, EventHandler {
 	private static final Logger LOG = 
         	LoggerFactory.getLogger(BizStep.class);
     
-	public static String uniqueEvent(final String eventPrefix) {
-		return ((eventPrefix != null ) ? eventPrefix : "")
-				+ UUID.randomUUID().toString();
-	}
-	
     @Override
 	protected BizStep clone() {
-		try {
-			final BizStep cloned = (BizStep)super.clone();
-	    	cloned._isFrozen = false;
-	    	
-	    	return	cloned;
-		} catch (CloneNotSupportedException e) {
-			LOG.error("failed to clone: {}", ExceptionUtils.exception2detail(e));
-		}
-    	return null;
+		final BizStep cloned = new BizStep( this._name );
+		
+		cloned._handlers.putAll( this._handlers );
+    	
+    	return	cloned;
 	}
 
 	public BizStep(final String name) {
@@ -70,83 +60,127 @@ public class BizStep implements Cloneable, EventHandler {
     	}
     	
     	if ( !this._isFrozen ) {
-    		final String bindedEvent = eventInvoker.getBindedEvent();
-    		if ( null != bindedEvent ) {
-				_handlers.put(bindedEvent, eventInvoker);
-				return 	this;
-    		}
-    		else {
-    	    	LOG.warn("add handler failed for {}, no binded event.", eventInvoker);
-    			return	this;
-    		}
+    		addHandler(eventInvoker);
+    		return this;
     	}
     	else {
     		return	this.clone().handler(eventInvoker);
     	}
     }
 
+    /**
+     * @param eventInvoker
+     * @return
+     */
+    private void addHandler(final EventInvoker eventInvoker) {
+        final String bindedEvent = eventInvoker.getBindedEvent();
+        if ( null != bindedEvent ) {
+        	this._handlers.put(bindedEvent, eventInvoker);
+        }
+        else {
+        	LOG.warn("add handler failed for {}, no binded event.", eventInvoker);
+        }
+    }
+
+    private boolean removeHandlerOf(final String event) {
+        return (this._handlers.remove(event) != null);
+    }
+    
     public BizStep freeze() {
         this._isFrozen = true;
     	return	this;
     }
     
-	public BizStep bindAndFireDelayedEvent(
-	        final ExectionLoop exectionLoop,
-			final EventReceiver receiver,
-			final long 	delay, 
-			final EventInvoker eventInvoker,
-			final String event, 
-			final Object... args) {
-    	if ( !this._isFrozen ) {
-			final Detachable cancel = exectionLoop.schedule(new Runnable() {
-	
-				@Override
-				public void run() {
-					try {
-						receiver.acceptEvent(event, args);
-					} catch (Exception e) {
-						LOG.error("exception when acceptEvent for event {}, detail: {}", 
-								event, ExceptionUtils.exception2detail(e));
-					}
-				}}, delay);
-			
-			this._delayedEvents.put(event, Pair.of(eventInvoker, cancel) );
-			
-			return this;
-    	}
-    	else {
-    		return this.clone().bindAndFireDelayedEvent(exectionLoop, receiver, delay, eventInvoker, event, args);
-    	}
-	}
+    private final class DelayEventImpl implements DelayEvent {
 
-	public boolean isDelayedEventValid(final String delayedEvent) {
-		return	_delayedEvents.containsKey(delayedEvent);
-	}
+        DelayEventImpl(final EventInvoker eventInvoker) {
+            this._invoker = eventInvoker;
+        }
+        
+        @Override
+        public DelayEvent args(final Object... args) {
+            this._args = args;
+            return this;
+        }
 
-	public void cancelDelayedEvent(final String delayedEvent) {
-		final Pair<EventInvoker,Detachable> tuple = this._delayedEvents.remove(delayedEvent);
-		if ( null != tuple ) {
-			try {
-				tuple.getSecond().detach();
-			} catch (Exception e) {
-				LOG.error("exception with cancelDelayedEvent: {}", 
-						ExceptionUtils.exception2detail(e));
-			}
-		}
-	}
+        @Override
+        public DelayEvent delayMillis(final long delayMillis) {
+            this._delayMillis = delayMillis;
+            return this;
+        }
 
-	public void cancelAllDelayedEvents() {
-		while ( !this._delayedEvents.isEmpty() ) {
-			cancelDelayedEvent(_delayedEvents.keySet().iterator().next());
-		}
-	}
+        @Override
+        public Detachable fireWith(final ExectionLoop exectionLoop,
+                final EventReceiver receiver) {
+            final String event = UUID.randomUUID().toString();
+            final Object[] args = this._args;
+            
+            BizStep.this.addHandler(new EventInvoker() {
+                @Override
+                public String toString() {
+                    return _invoker.toString();
+                }
+                @Override
+                public <RET> RET invoke(Object[] args) throws Exception {
+                    return _invoker.invoke(args);
+                }
+                @Override
+                public String getBindedEvent() {
+                    return event;
+                }} );
+            
+            final Detachable cancel = exectionLoop.schedule(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        receiver.acceptEvent(event, args);
+                    } catch (Exception e) {
+                        LOG.error("exception when acceptEvent for event {}, detail: {}", 
+                                event, ExceptionUtils.exception2detail(e));
+                    }
+                }}, this._delayMillis);
+            
+            return new Detachable() {
+
+                @Override
+                public void detach() throws Exception {
+                    if ( LOG.isDebugEnabled() ) {
+                        LOG.debug("cancel delay event {}/{}", event, _invoker);
+                    }
+                    try {
+                        BizStep.this.removeHandlerOf(event);
+                        cancel.detach();
+                    }
+                    catch (Exception e) {
+                        LOG.warn("exception when cancel delay event {}, detail:{}",
+                                event, ExceptionUtils.exception2detail(e));
+                    }
+                }};
+        }
+
+        @SuppressWarnings("unchecked")
+        @Override
+        public BizStep owner() {
+            return BizStep.this;
+        }
+        
+        private Object[] _args = null;
+        private long _delayMillis;
+        private final EventInvoker _invoker;
+    }
+    
+    public DelayEvent delayEvent(final EventInvoker eventInvoker) {
+        if ( !this._isFrozen ) {
+            return new DelayEventImpl(eventInvoker);
+        }
+        else {
+            return this.clone().delayEvent(eventInvoker);
+        }
+    }
     
     private final Map<String, EventInvoker> _handlers = 
-    		new HashMap<String, EventInvoker>();
+    		new ConcurrentHashMap<String, EventInvoker>();
 
-	private final Map<String, Pair<EventInvoker,Detachable>> _delayedEvents = 
-			new ConcurrentHashMap<String, Pair<EventInvoker,Detachable>>();
-	
     private volatile String _name;
     
     private boolean _isFrozen = false;
@@ -154,21 +188,13 @@ public class BizStep implements Cloneable, EventHandler {
     //	implements EventHandler
 	@Override
 	public String getName() {
-		return _name;
+		return this._name;
 	}
 
 	@Override
 	public Pair<EventHandler, Boolean> process(final String event, final Object[] args) {
 		try {
-			EventInvoker eventInvoker = this._handlers.get(event);
-			
-			//	try delayed event
-			if ( null == eventInvoker ) {
-				final Pair<EventInvoker, Detachable> tuple = _delayedEvents.remove(event);
-				if ( null != tuple ) {
-					eventInvoker = tuple.getFirst();
-				}
-			}
+			final EventInvoker eventInvoker = this._handlers.get(event);
 			
 			if ( null != eventInvoker ) {
 				return Pair.of((EventHandler)eventInvoker.invoke(args), true);

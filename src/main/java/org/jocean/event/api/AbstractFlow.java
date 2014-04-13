@@ -3,7 +3,9 @@
  */
 package org.jocean.event.api;
 
+import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 
 import org.jocean.event.api.internal.DefaultInvoker;
@@ -15,9 +17,13 @@ import org.jocean.event.api.internal.EventNameAware;
 import org.jocean.event.api.internal.ExectionLoopAware;
 import org.jocean.event.api.internal.FlowLifecycleAware;
 import org.jocean.idiom.COWCompositeSupport;
+import org.jocean.idiom.Detachable;
+import org.jocean.idiom.ExceptionUtils;
 import org.jocean.idiom.ExectionLoop;
 import org.jocean.idiom.InterfaceSource;
 import org.jocean.idiom.Visitor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author isdom
@@ -32,6 +38,9 @@ public abstract class AbstractFlow<FLOW>
 		InterfaceSource
 		{
 
+    private static final Logger LOG = 
+            LoggerFactory.getLogger(AbstractFlow.class);
+    
     @SuppressWarnings("unchecked")
     @Override
 	public <INTF> INTF queryInterfaceInstance(final Class<INTF> intfCls) {
@@ -75,6 +84,31 @@ public abstract class AbstractFlow<FLOW>
 		return DefaultInvoker.of(this, methodName);
 	}
 	
+    protected Detachable fireDelayEvent(final DelayEvent delayEvent) {
+        return delayEvent.fireWith( this._exectionLoop, this._receiver);
+    }
+    
+    protected DelayEvent fireDelayEventAndPush(final DelayEvent delayEvent) {
+        this._timers.add( delayEvent.fireWith( 
+                this._exectionLoop, this._receiver));
+        return delayEvent;
+    }
+
+    protected void popAndCancelDealyEvents() {
+        while ( !this._timers.isEmpty() ) {
+            final Detachable timerCancel = this._timers.poll();
+            if ( null != timerCancel ) {
+                try {
+                    timerCancel.detach();
+                }
+                catch (Exception e) {
+                    LOG.warn("exception when cancel timer, detail:{}", 
+                            ExceptionUtils.exception2detail(e));
+                }
+            }
+        }
+    }
+    
 	@Override
 	public void setEventHandler(final EventHandler handler) throws Exception {
 		this._handler = handler;
@@ -142,6 +176,8 @@ public abstract class AbstractFlow<FLOW>
 	private Object 			_endreason;
 	private EventReceiver	_receiver;
 	private ExectionLoop    _exectionLoop;
+    private Queue<Detachable> _timers = 
+            new ConcurrentLinkedQueue<Detachable>();
 	
 	private final COWCompositeSupport<FlowLifecycleListener<FLOW>> _lifecycleSupport
 		= new COWCompositeSupport<FlowLifecycleListener<FLOW>>();
