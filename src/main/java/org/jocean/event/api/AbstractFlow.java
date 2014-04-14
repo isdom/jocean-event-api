@@ -88,10 +88,11 @@ public abstract class AbstractFlow<FLOW>
         return delayEvent.fireWith( this._exectionLoop, this._receiver);
     }
     
-    protected DelayEvent fireDelayEventAndPush(final DelayEvent delayEvent) {
+    protected <T extends EventHandler> T fireDelayEventAndPush(
+            final DelayEvent delayEvent) {
         this._timers.add( delayEvent.fireWith( 
                 this._exectionLoop, this._receiver));
-        return delayEvent;
+        return delayEvent.owner();
     }
 
     protected void popAndCancelDealyEvents() {

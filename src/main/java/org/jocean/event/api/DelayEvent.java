@@ -8,8 +8,6 @@ public interface DelayEvent {
 
     public DelayEvent args(final Object... args);
     
-    public DelayEvent delayMillis(final long delayMillis);
-    
     public Detachable fireWith(final ExectionLoop exectionLoop, 
             final EventReceiver receiver);
     

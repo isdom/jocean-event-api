@@ -93,19 +93,14 @@ public class BizStep implements Cloneable, EventHandler {
     
     private final class DelayEventImpl implements DelayEvent {
 
-        DelayEventImpl(final EventInvoker eventInvoker) {
+        DelayEventImpl(final EventInvoker eventInvoker, final long delayMillis) {
             this._invoker = eventInvoker;
+            this._delayMillis = delayMillis;
         }
         
         @Override
         public DelayEvent args(final Object... args) {
             this._args = args;
-            return this;
-        }
-
-        @Override
-        public DelayEvent delayMillis(final long delayMillis) {
-            this._delayMillis = delayMillis;
             return this;
         }
 
@@ -165,16 +160,16 @@ public class BizStep implements Cloneable, EventHandler {
         }
         
         private Object[] _args = null;
-        private long _delayMillis;
+        private final long _delayMillis;
         private final EventInvoker _invoker;
     }
     
-    public DelayEvent delayEvent(final EventInvoker eventInvoker) {
+    public DelayEvent makeDelayEvent(final EventInvoker eventInvoker, final long delayMillis) {
         if ( !this._isFrozen ) {
-            return new DelayEventImpl(eventInvoker);
+            return new DelayEventImpl(eventInvoker, delayMillis);
         }
         else {
-            return this.clone().delayEvent(eventInvoker);
+            return this.clone().makeDelayEvent(eventInvoker, delayMillis);
         }
     }
     
