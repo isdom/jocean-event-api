@@ -10,6 +10,9 @@ import java.lang.reflect.Proxy;
 import org.jocean.event.api.annotation.OnEvent;
 import org.jocean.event.api.internal.Eventable;
 import org.jocean.idiom.ExceptionUtils;
+import org.jocean.idiom.Function;
+import org.jocean.idiom.Pair;
+import org.jocean.idiom.SimpleCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,16 +70,36 @@ public class EventUtils {
             final EventReceiver receiver) {
         return (INTF) Proxy.newProxyInstance(Thread.currentThread()
                 .getContextClassLoader(), new Class<?>[] { intf },
-                new ReceiverAdapterHandler(receiver));
+                new ReceiverAdapterHandler(intf, receiver));
     }
 
     private static final class ReceiverAdapterHandler implements
             InvocationHandler {
+        private static SimpleCache<Pair<Class<Object>, Method>, String> _method2event = 
+                new SimpleCache<Pair<Class<Object>, Method>, String>(
+            new Function<Pair<Class<Object>, Method>, String>() {
+            @Override
+            public String apply(final Pair<Class<Object>, Method> input) {
+                final Method[] methods = input.first.getDeclaredMethods();
+                for ( Method m : methods ) {
+                    if ( m.getName().equals(input.second.getName()) ) {
+                        return safeGetEventOf(m);
+                    }
+                }
+                return safeGetEventOf(input.second);
+            }
 
-        ReceiverAdapterHandler(final EventReceiver receiver) {
+            private String safeGetEventOf(final Method method) {
+                final OnEvent onevent = method.getAnnotation(OnEvent.class);
+                return (null != onevent) ? onevent.event() : method.getName();
+            }});
+        
+        @SuppressWarnings("unchecked")
+        ReceiverAdapterHandler(final Class<?> intf, final EventReceiver receiver) {
             if (null == receiver) {
                 throw new NullPointerException("EventReceiver can't be null");
             }
+            this._cls = (Class<Object>)intf;
             this._receiver = receiver;
         }
 
@@ -100,9 +123,10 @@ public class EventUtils {
             } else if (method.getName().equals("toString")) {
                 return this._receiver.toString();
             }
-            final OnEvent onevent = method.getAnnotation(OnEvent.class);
-            final String eventName = (null != onevent) ? onevent.event()
-                    : method.getName();
+            
+            final String eventName = 
+                    _method2event.get(Pair.of(this._cls, method));
+            
             boolean isAccepted = _receiver.acceptEvent(eventName, args);
             if (method.getReturnType().equals(Boolean.class)
                     || method.getReturnType().equals(boolean.class)) {
@@ -113,5 +137,6 @@ public class EventUtils {
         }
 
         private final EventReceiver _receiver;
+        private final Class<Object> _cls;
     }
 }
