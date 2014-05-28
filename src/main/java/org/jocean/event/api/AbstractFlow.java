@@ -88,7 +88,7 @@ public abstract class AbstractFlow<FLOW>
         return delayEvent.fireWith( this._exectionLoop, this._receiver);
     }
     
-    protected <T extends EventHandler> T fireDelayEventAndPush(
+    public <T extends EventHandler> T fireDelayEventAndPush(
             final DelayEvent delayEvent) {
         this._timers.add( delayEvent.fireWith( 
                 this._exectionLoop, this._receiver));
