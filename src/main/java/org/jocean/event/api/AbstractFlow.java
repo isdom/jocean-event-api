@@ -3,9 +3,9 @@
  */
 package org.jocean.event.api;
 
-import java.util.Queue;
+import java.util.Collection;
+import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 
 import org.jocean.event.api.internal.DefaultInvoker;
@@ -88,21 +88,26 @@ public abstract class AbstractFlow<FLOW>
         return delayEvent.fireWith( this._exectionLoop, this._receiver);
     }
     
-    public <T extends EventHandler> T fireDelayEventAndPush(
-            final DelayEvent delayEvent) {
-        this._timers.add( delayEvent.fireWith( 
-                this._exectionLoop, this._receiver));
+    public <T extends EventHandler> T fireDelayEventAndAddTo(
+            final DelayEvent delayEvent, final Collection<Detachable> timers) {
+        final Detachable task = delayEvent.fireWith( 
+                this._exectionLoop, this._receiver);
+        if ( null!=task && null!=timers ) {
+            timers.add(task);
+        }
         return delayEvent.owner();
     }
 
-    protected void popAndCancelDealyEvents() {
-        while ( !this._timers.isEmpty() ) {
-            final Detachable timerCancel = this._timers.poll();
-            if ( null != timerCancel ) {
+    public void removeAndCancelAllDealyEvents(final Collection<Detachable> timers) {
+        while ( null!=timers && !timers.isEmpty() ) {
+            final Iterator<Detachable> itr = timers.iterator();
+            final Detachable task = itr.next();
+            itr.remove();
+            if ( null != task ) {
                 try {
-                    timerCancel.detach();
+                    task.detach();
                 }
-                catch (Exception e) {
+                catch (Throwable e) {
                     LOG.warn("exception when cancel timer, detail:{}", 
                             ExceptionUtils.exception2detail(e));
                 }
@@ -177,8 +182,6 @@ public abstract class AbstractFlow<FLOW>
 	private Object 			_endreason;
 	private EventReceiver	_receiver;
 	private ExectionLoop    _exectionLoop;
-    private Queue<Detachable> _timers = 
-            new ConcurrentLinkedQueue<Detachable>();
 	
 	private final COWCompositeSupport<FlowLifecycleListener<FLOW>> _lifecycleSupport
 		= new COWCompositeSupport<FlowLifecycleListener<FLOW>>();
