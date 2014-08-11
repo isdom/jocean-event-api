@@ -91,7 +91,7 @@ public class BizStep implements Cloneable, EventHandler {
         }
     }
 
-    public BizStep handlers(final EventInvoker ... eventInvokers) {
+    public BizStep handler(final EventInvoker ... eventInvokers) {
         if ( null == eventInvokers ) {
             LOG.warn("add handlers failed, invoker is null.");
             return  this;
@@ -102,7 +102,7 @@ public class BizStep implements Cloneable, EventHandler {
             return this;
         }
         else {
-            return  this.clone().handlers(eventInvokers);
+            return  this.clone().handler(eventInvokers);
         }
     }
     
