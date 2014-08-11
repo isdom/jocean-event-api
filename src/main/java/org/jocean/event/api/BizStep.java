@@ -85,6 +85,27 @@ public class BizStep implements Cloneable, EventHandler {
         }
     }
 
+    public BizStep handlers(final EventInvoker ... eventInvokers) {
+        if ( null == eventInvokers ) {
+            LOG.warn("add handlers failed, invoker is null.");
+            return  this;
+        }
+        
+        if ( !this._isFrozen ) {
+            addHandlers(eventInvokers);
+            return this;
+        }
+        else {
+            return  this.clone().handlers(eventInvokers);
+        }
+    }
+    
+    private void addHandlers(final EventInvoker[] eventInvokers) {
+        for ( EventInvoker eventInvoker : eventInvokers ) {
+            addHandler(eventInvoker);
+        }
+    }
+
     public BizStep delayed(final EventInvoker eventInvoker) {
         if ( null == eventInvoker ) {
             LOG.warn("add timeout handler failed, invoker is null.");

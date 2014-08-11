@@ -3,11 +3,14 @@
  */
 package org.jocean.event.api;
 
+import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import org.jocean.event.api.annotation.OnEvent;
 import org.jocean.event.api.internal.DefaultInvoker;
 import org.jocean.event.api.internal.EndReasonSource;
 import org.jocean.event.api.internal.EventHandler;
@@ -21,6 +24,7 @@ import org.jocean.idiom.Detachable;
 import org.jocean.idiom.ExceptionUtils;
 import org.jocean.idiom.ExectionLoop;
 import org.jocean.idiom.InterfaceSource;
+import org.jocean.idiom.ReflectUtils;
 import org.jocean.idiom.Visitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -84,6 +88,24 @@ public abstract class AbstractFlow<FLOW>
 		return DefaultInvoker.of(this, methodName);
 	}
 	
+    public EventInvoker[] invokers(final Object obj) {
+        if ( null == obj ) {
+            return null;
+        }
+        
+        final Method[] methods = ReflectUtils.getAnnotationMethodsOf(obj.getClass(), OnEvent.class);
+        if ( methods.length <= 0 ) {
+            return null;
+        }
+        return (new ArrayList<EventInvoker>() { 
+            private static final long serialVersionUID = 1L;
+        {
+            for ( int idx = 0; idx < methods.length; idx++) {
+                this.add(DefaultInvoker.of(obj, methods[idx]));
+            }
+        } }).toArray(new EventInvoker[0]);
+    }
+    
     protected Detachable fireDelayEvent(final DelayEvent delayEvent) {
         return delayEvent.fireWith( this._exectionLoop, this._receiver);
     }
