@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.jocean.event.api.internal.DefaultInvoker;
 import org.jocean.event.api.internal.EventHandler;
 import org.jocean.event.api.internal.EventInvoker;
 import org.jocean.idiom.Detachable;
@@ -39,6 +40,11 @@ public class BizStep implements Cloneable, EventHandler {
 
 	public BizStep(final String name) {
     	this._name = name;
+    	final EventInvoker[] handlers = 
+    	        DefaultInvoker.invokers(this);
+    	if ( null != handlers && handlers.length > 0 ) {
+    	    addHandlers(handlers);
+    	}
     }
     
 	public BizStep rename(final String name) {

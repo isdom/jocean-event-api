@@ -4,8 +4,10 @@
 package org.jocean.event.api.internal;
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 
 import org.jocean.event.api.annotation.OnEvent;
+import org.jocean.idiom.ReflectUtils;
 
 
 /**
@@ -13,6 +15,24 @@ import org.jocean.event.api.annotation.OnEvent;
  *
  */
 public class DefaultInvoker implements EventInvoker {
+    public static EventInvoker[] invokers(final Object target) {
+        if ( null == target ) {
+            return null;
+        }
+        
+        final Method[] methods = ReflectUtils.getAnnotationMethodsOf(target.getClass(), OnEvent.class);
+        if ( methods.length <= 0 ) {
+            return null;
+        }
+        return (new ArrayList<EventInvoker>() { 
+            private static final long serialVersionUID = 1L;
+        {
+            for ( int idx = 0; idx < methods.length; idx++) {
+                this.add(DefaultInvoker.of(target, methods[idx]));
+            }
+        } }).toArray(new EventInvoker[0]);
+    }
+    
     public static DefaultInvoker of(final Object target, final String methodName) {
         return of(target, methodName, null);
     }

@@ -88,22 +88,8 @@ public abstract class AbstractFlow<FLOW>
 		return DefaultInvoker.of(this, methodName);
 	}
 	
-    public EventInvoker[] invokers(final Object obj) {
-        if ( null == obj ) {
-            return null;
-        }
-        
-        final Method[] methods = ReflectUtils.getAnnotationMethodsOf(obj.getClass(), OnEvent.class);
-        if ( methods.length <= 0 ) {
-            return null;
-        }
-        return (new ArrayList<EventInvoker>() { 
-            private static final long serialVersionUID = 1L;
-        {
-            for ( int idx = 0; idx < methods.length; idx++) {
-                this.add(DefaultInvoker.of(obj, methods[idx]));
-            }
-        } }).toArray(new EventInvoker[0]);
+    public EventInvoker[] invokers(final Object target) {
+        return DefaultInvoker.invokers(target);
     }
     
     protected Detachable fireDelayEvent(final DelayEvent delayEvent) {
