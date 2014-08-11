@@ -3,13 +3,12 @@
  */
 package org.jocean.event.api;
 
-import java.lang.reflect.Method;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import org.jocean.event.api.annotation.OnDelayed;
 import org.jocean.event.api.annotation.OnEvent;
 import org.jocean.event.api.internal.DefaultInvoker;
 import org.jocean.event.api.internal.EndReasonSource;
@@ -24,7 +23,6 @@ import org.jocean.idiom.Detachable;
 import org.jocean.idiom.ExceptionUtils;
 import org.jocean.idiom.ExectionLoop;
 import org.jocean.idiom.InterfaceSource;
-import org.jocean.idiom.ReflectUtils;
 import org.jocean.idiom.Visitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -88,8 +86,12 @@ public abstract class AbstractFlow<FLOW>
 		return DefaultInvoker.of(this, methodName);
 	}
 	
-    public EventInvoker[] invokers(final Object target) {
-        return DefaultInvoker.invokers(target);
+    public EventInvoker[] handlersOf(final Object target) {
+        return DefaultInvoker.invokers(target, OnEvent.class);
+    }
+    
+    public EventInvoker[] delayedHandlersOf(final Object target) {
+        return DefaultInvoker.invokers(target, OnDelayed.class);
     }
     
     protected Detachable fireDelayEvent(final DelayEvent delayEvent) {

@@ -3,6 +3,7 @@
  */
 package org.jocean.event.api.internal;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 
@@ -15,12 +16,12 @@ import org.jocean.idiom.ReflectUtils;
  *
  */
 public class DefaultInvoker implements EventInvoker {
-    public static EventInvoker[] invokers(final Object target) {
+    public static EventInvoker[] invokers(final Object target, final Class<? extends Annotation> clsAnnotation) {
         if ( null == target ) {
             return null;
         }
         
-        final Method[] methods = ReflectUtils.getAnnotationMethodsOf(target.getClass(), OnEvent.class);
+        final Method[] methods = ReflectUtils.getAnnotationMethodsOf(target.getClass(), clsAnnotation);
         if ( methods.length <= 0 ) {
             return null;
         }

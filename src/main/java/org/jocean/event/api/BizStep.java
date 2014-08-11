@@ -9,6 +9,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.jocean.event.api.annotation.OnDelayed;
+import org.jocean.event.api.annotation.OnEvent;
 import org.jocean.event.api.internal.DefaultInvoker;
 import org.jocean.event.api.internal.EventHandler;
 import org.jocean.event.api.internal.EventInvoker;
@@ -40,10 +42,19 @@ public class BizStep implements Cloneable, EventHandler {
 
 	public BizStep(final String name) {
     	this._name = name;
-    	final EventInvoker[] handlers = 
-    	        DefaultInvoker.invokers(this);
-    	if ( null != handlers && handlers.length > 0 ) {
-    	    addHandlers(handlers);
+    	{
+        	final EventInvoker[] handlers = 
+        	        DefaultInvoker.invokers(this, OnEvent.class);
+        	if ( null != handlers && handlers.length > 0 ) {
+        	    addHandlers(handlers);
+        	}
+    	}
+    	{
+            final EventInvoker[] delayedHandlers = 
+                    DefaultInvoker.invokers(this, OnDelayed.class);
+            if ( null != delayedHandlers && delayedHandlers.length > 0 ) {
+                addDelayedHandlers(delayedHandlers);
+            }
     	}
     }
     
@@ -93,7 +104,7 @@ public class BizStep implements Cloneable, EventHandler {
 
     public BizStep handler(final EventInvoker ... eventInvokers) {
         if ( null == eventInvokers ) {
-            LOG.warn("add handlers failed, invoker is null.");
+            LOG.warn("add handlers failed, invokers is null.");
             return  this;
         }
         
@@ -114,7 +125,7 @@ public class BizStep implements Cloneable, EventHandler {
 
     public BizStep delayed(final EventInvoker eventInvoker) {
         if ( null == eventInvoker ) {
-            LOG.warn("add timeout handler failed, invoker is null.");
+            LOG.warn("add delayed handler failed, invoker is null.");
             return  this;
         }
         
@@ -132,6 +143,27 @@ public class BizStep implements Cloneable, EventHandler {
      */
     private void addDelayedHandler(final EventInvoker eventInvoker) {
         this._delayeds.add(eventInvoker);
+    }
+    
+    public BizStep delayed(final EventInvoker ... eventInvokers) {
+        if ( null == eventInvokers ) {
+            LOG.warn("add delayed handlers failed, invokers is null.");
+            return  this;
+        }
+        
+        if ( !this._isFrozen ) {
+            addDelayedHandlers(eventInvokers);
+            return this;
+        }
+        else {
+            return  this.clone().delayed(eventInvokers);
+        }
+    }
+    
+    private void addDelayedHandlers(final EventInvoker[] eventInvokers) {
+        for ( EventInvoker eventInvoker : eventInvokers ) {
+            addDelayedHandler(eventInvoker);
+        }
     }
     
     private boolean removeHandlerOf(final String event) {
