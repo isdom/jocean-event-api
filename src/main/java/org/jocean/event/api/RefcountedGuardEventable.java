@@ -4,14 +4,15 @@
 package org.jocean.event.api;
 
 import org.jocean.event.api.internal.Eventable;
+import org.jocean.idiom.ArgsHandler;
 
 /**
  * @author isdom
  *
  */
-public abstract class AbstractUnhandleAware implements EventUnhandleAware, Eventable {
+public class RefcountedGuardEventable extends ArgsHandler.Consts.RefcountedArgsGuard implements Eventable {
 
-    public AbstractUnhandleAware(final String event) {
+    public RefcountedGuardEventable(final String event) {
         this._event = event;
     }
     
