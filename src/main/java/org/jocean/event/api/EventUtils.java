@@ -7,6 +7,7 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 
+import org.jocean.event.api.annotation.GuardReferenceCounted;
 import org.jocean.event.api.annotation.OnEvent;
 import org.jocean.event.api.internal.Eventable;
 import org.jocean.idiom.ExceptionUtils;
@@ -75,11 +76,11 @@ public class EventUtils {
 
     private static final class ReceiverAdapterHandler implements
             InvocationHandler {
-        private static SimpleCache<Pair<Class<Object>, Method>, String> _method2event = 
-                new SimpleCache<Pair<Class<Object>, Method>, String>(
-            new Function<Pair<Class<Object>, Method>, String>() {
+        private static SimpleCache<Pair<Class<Object>, Method>, Object> _method2eventable = 
+                new SimpleCache<Pair<Class<Object>, Method>, Object>(
+            new Function<Pair<Class<Object>, Method>, Object>() {
             @Override
-            public String apply(final Pair<Class<Object>, Method> input) {
+            public Object apply(final Pair<Class<Object>, Method> input) {
                 final Method[] methods = input.first.getDeclaredMethods();
                 for ( Method m : methods ) {
                     if ( m.getName().equals(input.second.getName()) ) {
@@ -89,9 +90,17 @@ public class EventUtils {
                 return safeGetEventOf(input.second);
             }
 
-            private String safeGetEventOf(final Method method) {
+            private Object safeGetEventOf(final Method method) {
                 final OnEvent onevent = method.getAnnotation(OnEvent.class);
-                return (null != onevent) ? onevent.event() : method.getName();
+                final String event = (null != onevent) ? onevent.event() : method.getName();
+                final GuardReferenceCounted guardRefcounted = method.getAnnotation(GuardReferenceCounted.class);
+                if ( null != guardRefcounted 
+                     && guardRefcounted.value() ) {
+                    return new RefcountedGuardEventable(event);
+                }
+                else {
+                    return event;
+                }
             }});
         
         @SuppressWarnings("unchecked")
@@ -124,10 +133,12 @@ public class EventUtils {
                 return this._receiver.toString();
             }
             
-            final String eventName = 
-                    _method2event.get(Pair.of(this._cls, method));
+            final Object eventable = 
+                    _method2eventable.get(Pair.of(this._cls, method));
             
-            boolean isAccepted = _receiver.acceptEvent(eventName, args);
+            boolean isAccepted = (eventable instanceof Eventable) 
+                    ? _receiver.acceptEvent((Eventable)eventable, args)
+                    : _receiver.acceptEvent(eventable.toString(), args);
             if (method.getReturnType().equals(Boolean.class)
                     || method.getReturnType().equals(boolean.class)) {
                 return isAccepted;
