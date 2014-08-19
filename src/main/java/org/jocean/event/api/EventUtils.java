@@ -70,7 +70,7 @@ public class EventUtils {
     public static <INTF> INTF buildInterfaceAdapter(final Class<INTF> intf,
             final EventReceiver receiver) {
         return (INTF) Proxy.newProxyInstance(Thread.currentThread()
-                .getContextClassLoader(), new Class<?>[] { intf },
+                .getContextClassLoader(), new Class<?>[] { intf, EventReceiver.class },
                 new ReceiverAdapterHandler(intf, receiver));
     }
 
@@ -131,6 +131,12 @@ public class EventUtils {
                 return (proxy == args[0]);
             } else if (method.getName().equals("toString")) {
                 return this._receiver.toString();
+            }
+            
+            if ( method.getDeclaringClass().equals(EventReceiver.class) ) {
+//                public boolean acceptEvent(final String event, final Object... args) throws Exception;
+//                public boolean acceptEvent(final Eventable eventable, final Object... args) throws Exception;
+                return method.invoke(this._receiver, args);
             }
             
             final Object eventable = 
