@@ -373,7 +373,16 @@ public class BizStep implements Cloneable, EventHandler {
 			final EventInvoker eventInvoker = this._handlers.get(event);
 			
 			if ( null != eventInvoker ) {
-				return Pair.of((EventHandler)eventInvoker.invoke(args), true);
+			    try {
+			        return Pair.of((EventHandler)eventInvoker.invoke(args), true);
+			    }
+		        catch (EventUnhandleException e) {
+		            if ( LOG.isDebugEnabled() ) {
+		                LOG.debug("BizStep [{}]'s {} UNHANDLE event ({})", 
+		                        this._name, eventInvoker, event);
+		            }
+		            return Pair.of((EventHandler)this, false);
+		        }
 			}
 			else {
 			    if ( LOG.isDebugEnabled() ) {
@@ -384,7 +393,7 @@ public class BizStep implements Cloneable, EventHandler {
 				return Pair.of((EventHandler)this, false);
 			}
 		}
-		catch (Exception e) {
+		catch (Throwable e) {
 			LOG.error("exception when process event {}, detail:{}", 
 					event, ExceptionUtils.exception2detail(e));
 			return Pair.of((EventHandler)this, false);
