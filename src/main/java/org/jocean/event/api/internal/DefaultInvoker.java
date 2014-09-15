@@ -4,6 +4,7 @@
 package org.jocean.event.api.internal;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 
@@ -74,8 +75,13 @@ public class DefaultInvoker implements EventInvoker {
 	
     @SuppressWarnings("unchecked")
 	@Override
-	public <RET> RET invoke(final Object[] args) throws Exception {
-		return (RET)this._method.invoke(this._target, args);
+	public <RET> RET invoke(final Object[] args) throws Throwable {
+        try {
+            return (RET)this._method.invoke(this._target, args);
+        }
+        catch (final InvocationTargetException invocationTargetException) {
+            throw invocationTargetException.getCause();
+        }
 	}
 	
 	@Override

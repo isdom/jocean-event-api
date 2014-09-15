@@ -200,7 +200,7 @@ public class BizStep implements Cloneable, EventHandler {
                     return _invoker.toString();
                 }
                 @Override
-                public <RET> RET invoke(Object[] args) throws Exception {
+                public <RET> RET invoke(Object[] args) throws Throwable {
                     return _invoker.invoke(args);
                 }
                 @Override
@@ -285,7 +285,7 @@ public class BizStep implements Cloneable, EventHandler {
                         return delayInvoker.toString();
                     }
                     @Override
-                    public <RET> RET invoke(final Object[] paramArgs) throws Exception {
+                    public <RET> RET invoke(final Object[] paramArgs) throws Throwable {
                         return delayInvoker.invoke(paramArgs);
                     }
                     @Override

@@ -9,7 +9,7 @@ package org.jocean.event.api.internal;
  */
 public interface EventInvoker {
 	
-	public <RET> RET invoke(final Object[] args) throws Exception;
+	public <RET> RET invoke(final Object[] args) throws Throwable;
 	
 	public String	getBindedEvent();
 }
