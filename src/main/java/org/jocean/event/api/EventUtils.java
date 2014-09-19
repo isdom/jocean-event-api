@@ -69,8 +69,12 @@ public class EventUtils {
     @SuppressWarnings("unchecked")
     public static <INTF> INTF buildInterfaceAdapter(final Class<INTF> intf,
             final EventReceiver receiver) {
-        return (INTF) Proxy.newProxyInstance(Thread.currentThread()
-                .getContextClassLoader(), new Class<?>[] { intf, EventReceiver.class },
+        ClassLoader cl = Thread.currentThread().getContextClassLoader();
+        if (cl == null) {
+            cl = intf.getClassLoader();
+        }
+        return (INTF) Proxy.newProxyInstance(cl,
+                new Class<?>[]{intf, EventReceiver.class},
                 new ReceiverAdapterHandler(intf, receiver));
     }
 
