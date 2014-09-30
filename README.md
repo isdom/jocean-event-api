@@ -3,6 +3,10 @@ jocean-event-api
 
 jocean's 异步事件库 API
 
+2014-09-30： release 0.0.6 版本：
+  1、添加异常EventUnhandleException，用于在事件处理方法中，不再进行当前事件处理的情况下，则可以抛出该异常。如果当前事件是通过实现了EventUnhandleAware接口的Eventable发射的，则事件框架会在稍后调用其对应的onEventUnhandle接口方法
+  2、在EventUtils.buildInterfaceAdapter 实现中，处理Thread.currentThread().getContextClassLoader() 返回为 null 的情况，直接使用 intf.getClassLoader()。
+  
 2014-08-19： release 0.0.5 版本：
   1、对通过 buildInterfaceAdapter 产生的对象，默认实现 EventReceiver接口，并在对应接口方法被调用时，委托给 成员变量 receiver 执行
   2、增加自定义注解 GuardReferenceCounted ，并在 EventUtils.buildInterfaceAdapter中根据对应的 接口方法是是否有 GuardReferenceCounted(value=true) 注解，来选择 acceptEvent中传入的事件参数为简单字符串类型，还是 RefcountedGuardEventable 事件对象。
