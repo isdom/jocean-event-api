@@ -3,7 +3,6 @@
  */
 package org.jocean.event.api;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
@@ -18,6 +17,7 @@ import org.jocean.idiom.ExceptionUtils;
 import org.jocean.idiom.Function;
 import org.jocean.idiom.Pair;
 import org.jocean.idiom.PairedVisitor;
+import org.jocean.idiom.ReflectUtils;
 import org.jocean.idiom.SimpleCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -140,30 +140,13 @@ public class EventUtils {
                 }
             }
             
-            @SuppressWarnings("unchecked")
             private PairedVisitor<Object> generatePaired(final String textPaired) {
                 if (null == textPaired) {
                     throw new RuntimeException("null paired text.");
                 }
-                try {
-                    final int idx = textPaired.lastIndexOf('.');
-                    final String clsName = textPaired.substring(0, idx);
-                    final String fieldName = textPaired.substring(idx+1);
-                    final Class<?> cls = Class.forName(clsName);
-                    if ( null != cls ) {
-                        final Field field = cls.getDeclaredField(fieldName);
-                        if (null != field ) {
-                            field.setAccessible(true);
-                            final PairedVisitor<Object> paired = (PairedVisitor<Object>)field.get(null);
-                            if ( null != paired ) {
-                                return paired;
-                            }
-                        }
-                    }
-                } catch (Exception e) {
-                    LOG.warn("exception when generatePaired for ({}), detail:{}", 
-                            textPaired, ExceptionUtils.exception2detail(e) );
-                    throw new RuntimeException(e);
+                final PairedVisitor<Object> paired = ReflectUtils.getStaticFieldValue(textPaired);
+                if ( null != paired ) {
+                    return paired;
                 }
                 throw new RuntimeException("invalid paired text:(" + textPaired + ")");
             }});
