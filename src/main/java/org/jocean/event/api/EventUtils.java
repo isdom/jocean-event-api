@@ -3,16 +3,21 @@
  */
 package org.jocean.event.api;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.util.ArrayList;
+import java.util.List;
 
+import org.jocean.event.api.annotation.GuardPaired;
 import org.jocean.event.api.annotation.GuardReferenceCounted;
 import org.jocean.event.api.annotation.OnEvent;
 import org.jocean.event.api.internal.Eventable;
 import org.jocean.idiom.ExceptionUtils;
 import org.jocean.idiom.Function;
 import org.jocean.idiom.Pair;
+import org.jocean.idiom.PairedVisitor;
 import org.jocean.idiom.SimpleCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -97,6 +102,11 @@ public class EventUtils {
             private Object safeGetEventOf(final Method method) {
                 final OnEvent onevent = method.getAnnotation(OnEvent.class);
                 final String event = (null != onevent) ? onevent.event() : method.getName();
+                final GuardPaired guardPaired = method.getAnnotation(GuardPaired.class);
+                if ( null != guardPaired 
+                     && guardPaired.value() ) {
+                    return new PairedGuardEventable(generatePaired(guardPaired.paired()), event);
+                }
                 final GuardReferenceCounted guardRefcounted = method.getAnnotation(GuardReferenceCounted.class);
                 if ( null != guardRefcounted 
                      && guardRefcounted.value() ) {
@@ -105,6 +115,57 @@ public class EventUtils {
                 else {
                     return event;
                 }
+            }
+
+            @SuppressWarnings("unchecked")
+            private PairedVisitor<Object> generatePaired(final String[] textPaireds) {
+                if (textPaireds.length == 1) {
+                    return generatePaired(textPaireds[0]);
+                }
+                else {
+                    final List<PairedVisitor<Object>> paireds = new ArrayList<PairedVisitor<Object>>() {
+                        private static final long serialVersionUID = 1L;
+                        {
+                            for (String text : textPaireds) {
+                                final PairedVisitor<Object> paired = generatePaired(text);
+                                if (null != paired) {
+                                    this.add(paired);
+                                }
+                            }
+                        }
+                    };
+                    return !paireds.isEmpty()
+                            ? PairedVisitor.Utils.composite(paireds.toArray(new PairedVisitor[0])) 
+                            : null;
+                }
+            }
+            
+            @SuppressWarnings("unchecked")
+            private PairedVisitor<Object> generatePaired(final String textPaired) {
+                if (null == textPaired) {
+                    throw new RuntimeException("null paired text.");
+                }
+                try {
+                    final int idx = textPaired.lastIndexOf('.');
+                    final String clsName = textPaired.substring(0, idx);
+                    final String fieldName = textPaired.substring(idx+1);
+                    final Class<?> cls = Class.forName(clsName);
+                    if ( null != cls ) {
+                        final Field field = cls.getDeclaredField(fieldName);
+                        if (null != field ) {
+                            field.setAccessible(true);
+                            final PairedVisitor<Object> paired = (PairedVisitor<Object>)field.get(null);
+                            if ( null != paired ) {
+                                return paired;
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    LOG.warn("exception when generatePaired for ({}), detail:{}", 
+                            textPaired, ExceptionUtils.exception2detail(e) );
+                    throw new RuntimeException(e);
+                }
+                throw new RuntimeException("invalid paired text:(" + textPaired + ")");
             }});
         
         @SuppressWarnings("unchecked")
