@@ -13,4 +13,6 @@ import org.jocean.event.api.internal.EventHandler;
 public interface EventReceiverSource {
 
     public EventReceiver create(final Object flow, final EventHandler initState);
+    
+    public EventReceiver createFromInnerState(final EventHandler initState);
 }
