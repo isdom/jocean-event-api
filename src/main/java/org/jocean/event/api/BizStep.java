@@ -27,6 +27,9 @@ import org.slf4j.LoggerFactory;
  */
 public class BizStep implements Cloneable, EventHandler {
 
+    //  means current BizStep using for FlowContextImpl
+    public static BizStep CURRENT_BIZSTEP = new BizStep("CURRENT_BIZSTEP").freeze();
+    
 	private static final Logger LOG = 
         	LoggerFactory.getLogger(BizStep.class);
     
