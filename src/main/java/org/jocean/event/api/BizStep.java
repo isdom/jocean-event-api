@@ -43,6 +43,11 @@ public class BizStep implements Cloneable, EventHandler {
     	return	cloned;
 	}
 
+	@Override
+	public String toString() {
+		return "BizStep [" + _name + "]";
+	}
+
 	public BizStep(final String name) {
     	this._name = name;
     	{
