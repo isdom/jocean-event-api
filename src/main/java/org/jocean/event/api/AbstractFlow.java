@@ -37,7 +37,8 @@ public abstract class AbstractFlow<FLOW>
 		FlowLifecycleAware, 
 		EndReasonSource,
 		ExectionLoopAware,
-		InterfaceSource
+		InterfaceSource,
+		FlowStateChangedListener<FLOW,EventHandler>
 		{
 
     private static final Logger LOG = 
@@ -138,23 +139,62 @@ public abstract class AbstractFlow<FLOW>
 	@Override
 	public void afterEventReceiverCreated(final EventReceiver receiver) throws Exception {
 		this._receiver = receiver;
-		this._lifecycleSupport.foreachComponent(new Visitor<FlowLifecycleListener<FLOW>>() {
-			@SuppressWarnings("unchecked")
-			@Override
-			public void visit(final FlowLifecycleListener<FLOW> lifecycle) throws Exception {
-				lifecycle.afterEventReceiverCreated((FLOW)AbstractFlow.this, receiver);
-			}});
+    	if (!this._lifecycleSupport.isEmpty()) {
+			this._lifecycleSupport.foreachComponent(
+				new Visitor<FlowLifecycleListener<FLOW>>() {
+					@SuppressWarnings("unchecked")
+					@Override
+					public void visit(final FlowLifecycleListener<FLOW> lifecycle) throws Exception {
+						lifecycle.afterEventReceiverCreated((FLOW)AbstractFlow.this, receiver);
+					}});
+    	}
 	}
 	
 	@Override
 	public void afterFlowDestroy() throws Exception {
-		this._lifecycleSupport.foreachComponent(new Visitor<FlowLifecycleListener<FLOW>>() {
-			@SuppressWarnings("unchecked")
-			@Override
-			public void visit(final FlowLifecycleListener<FLOW> lifecycle) throws Exception {
-				lifecycle.afterFlowDestroy((FLOW)AbstractFlow.this);
-			}});
+    	if (!this._lifecycleSupport.isEmpty()) {
+			this._lifecycleSupport.foreachComponent(
+				new Visitor<FlowLifecycleListener<FLOW>>() {
+					@SuppressWarnings("unchecked")
+					@Override
+					public void visit(final FlowLifecycleListener<FLOW> lifecycle) throws Exception {
+						lifecycle.afterFlowDestroy((FLOW)AbstractFlow.this);
+					}});
+    	}
 	}
+	
+	@SuppressWarnings("unchecked")
+	public FLOW addFlowStateChangedListener(
+			final FlowStateChangedListener<FLOW, ? extends EventHandler> listener) {
+		this._stateChangedSupport.addComponent((FlowStateChangedListener<FLOW, EventHandler>) listener);
+		return (FLOW)this;
+	}
+	
+	@SuppressWarnings("unchecked")
+	public FLOW removeFlowStateChangedListener(
+			final FlowStateChangedListener<FLOW, ? extends EventHandler> listener) {
+		this._stateChangedSupport.removeComponent((FlowStateChangedListener<FLOW, EventHandler>) listener);
+		return (FLOW)this;
+	}
+	
+    @Override
+	public void onStateChanged(
+			final FLOW			flow,
+			final EventHandler 	prev, 
+			final EventHandler 	next,
+			final String 	causeEvent, 
+			final Object[] 	causeArgs) throws Exception {
+    	if (!this._stateChangedSupport.isEmpty()) {
+	    	this._stateChangedSupport.foreachComponent(
+				new Visitor<FlowStateChangedListener<FLOW,  EventHandler>>() {
+					@Override
+					public void visit(
+							final FlowStateChangedListener<FLOW, EventHandler> listener)
+							throws Exception {
+						listener.onStateChanged(flow, prev, next, causeEvent, causeArgs);
+					}});
+    	}
+    }
 	
     @Override
     public void setExectionLoop(final ExectionLoop exectionLoop) {
@@ -194,7 +234,9 @@ public abstract class AbstractFlow<FLOW>
 	private ExectionLoop    _exectionLoop;
 	
 	private final COWCompositeSupport<FlowLifecycleListener<FLOW>> _lifecycleSupport
-		= new COWCompositeSupport<FlowLifecycleListener<FLOW>>();
+		= new COWCompositeSupport<>();
+	private final COWCompositeSupport<FlowStateChangedListener<FLOW, EventHandler>> _stateChangedSupport
+		= new COWCompositeSupport<>();
 	private final ConcurrentMap<Class<?>, Object> _adapters = 
-			new ConcurrentHashMap<Class<?>, Object>();
+			new ConcurrentHashMap<>();
 }
