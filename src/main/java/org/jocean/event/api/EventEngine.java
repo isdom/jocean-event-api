@@ -10,7 +10,7 @@ import org.jocean.event.api.internal.EventHandler;
  * @author isdom
  * 
  */
-public interface EventReceiverSource {
+public interface EventEngine {
 
     public EventReceiver create(final Object flow, final EventHandler initState);
     
