@@ -11,13 +11,12 @@ import java.util.concurrent.ConcurrentMap;
 import org.jocean.event.api.annotation.OnDelayed;
 import org.jocean.event.api.annotation.OnEvent;
 import org.jocean.event.api.internal.DefaultInvoker;
-import org.jocean.event.api.internal.EndReasonSource;
+import org.jocean.event.api.internal.EndReasonProvider;
 import org.jocean.event.api.internal.EventHandler;
 import org.jocean.event.api.internal.EventHandlerAware;
 import org.jocean.event.api.internal.EventInvoker;
 import org.jocean.event.api.internal.EventNameAware;
 import org.jocean.event.api.internal.ExectionLoopAware;
-import org.jocean.event.api.internal.FlowLifecycleAware;
 import org.jocean.idiom.COWCompositeSupport;
 import org.jocean.idiom.Detachable;
 import org.jocean.idiom.ExceptionUtils;
@@ -34,11 +33,11 @@ import org.slf4j.LoggerFactory;
 public abstract class AbstractFlow<FLOW>
 	implements EventNameAware, 
 		EventHandlerAware, 
-		FlowLifecycleAware, 
-		EndReasonSource,
 		ExectionLoopAware,
-		InterfaceSource,
-		FlowStateChangedListener<FLOW,EventHandler>
+		FlowLifecycleListener, 
+		FlowStateChangedListener<EventHandler>,
+		EndReasonProvider,
+		InterfaceSource
 		{
 
     private static final Logger LOG = 
@@ -72,13 +71,13 @@ public abstract class AbstractFlow<FLOW>
 	}
 	
 	@SuppressWarnings("unchecked")
-	public FLOW addFlowLifecycleListener(final FlowLifecycleListener<FLOW> lifecycle) {
+	public FLOW addFlowLifecycleListener(final FlowLifecycleListener lifecycle) {
 		this._lifecycleSupport.addComponent(lifecycle);
 		return (FLOW)this;
 	}
 	
 	@SuppressWarnings("unchecked")
-	public FLOW removeFlowLifecycleListener(final FlowLifecycleListener<FLOW> lifecycle) {
+	public FLOW removeFlowLifecycleListener(final FlowLifecycleListener lifecycle) {
 		this._lifecycleSupport.removeComponent(lifecycle);
 		return (FLOW)this;
 	}
@@ -141,11 +140,10 @@ public abstract class AbstractFlow<FLOW>
 		this._receiver = receiver;
     	if (!this._lifecycleSupport.isEmpty()) {
 			this._lifecycleSupport.foreachComponent(
-				new Visitor<FlowLifecycleListener<FLOW>>() {
-					@SuppressWarnings("unchecked")
+				new Visitor<FlowLifecycleListener>() {
 					@Override
-					public void visit(final FlowLifecycleListener<FLOW> lifecycle) throws Exception {
-						lifecycle.afterEventReceiverCreated((FLOW)AbstractFlow.this, receiver);
+					public void visit(final FlowLifecycleListener lifecycle) throws Exception {
+						lifecycle.afterEventReceiverCreated(receiver);
 					}});
     	}
 	}
@@ -154,44 +152,42 @@ public abstract class AbstractFlow<FLOW>
 	public void afterFlowDestroy() throws Exception {
     	if (!this._lifecycleSupport.isEmpty()) {
 			this._lifecycleSupport.foreachComponent(
-				new Visitor<FlowLifecycleListener<FLOW>>() {
-					@SuppressWarnings("unchecked")
+				new Visitor<FlowLifecycleListener>() {
 					@Override
-					public void visit(final FlowLifecycleListener<FLOW> lifecycle) throws Exception {
-						lifecycle.afterFlowDestroy((FLOW)AbstractFlow.this);
+					public void visit(final FlowLifecycleListener lifecycle) throws Exception {
+						lifecycle.afterFlowDestroy();
 					}});
     	}
 	}
 	
 	@SuppressWarnings("unchecked")
 	public FLOW addFlowStateChangedListener(
-			final FlowStateChangedListener<FLOW, ? extends EventHandler> listener) {
-		this._stateChangedSupport.addComponent((FlowStateChangedListener<FLOW, EventHandler>) listener);
+			final FlowStateChangedListener<? extends EventHandler> listener) {
+		this._stateChangedSupport.addComponent((FlowStateChangedListener<EventHandler>) listener);
 		return (FLOW)this;
 	}
 	
 	@SuppressWarnings("unchecked")
 	public FLOW removeFlowStateChangedListener(
-			final FlowStateChangedListener<FLOW, ? extends EventHandler> listener) {
-		this._stateChangedSupport.removeComponent((FlowStateChangedListener<FLOW, EventHandler>) listener);
+			final FlowStateChangedListener<? extends EventHandler> listener) {
+		this._stateChangedSupport.removeComponent((FlowStateChangedListener<EventHandler>) listener);
 		return (FLOW)this;
 	}
 	
     @Override
 	public void onStateChanged(
-			final FLOW			flow,
 			final EventHandler 	prev, 
 			final EventHandler 	next,
 			final String 	causeEvent, 
 			final Object[] 	causeArgs) throws Exception {
     	if (!this._stateChangedSupport.isEmpty()) {
 	    	this._stateChangedSupport.foreachComponent(
-				new Visitor<FlowStateChangedListener<FLOW,  EventHandler>>() {
+				new Visitor<FlowStateChangedListener<EventHandler>>() {
 					@Override
 					public void visit(
-							final FlowStateChangedListener<FLOW, EventHandler> listener)
+							final FlowStateChangedListener<EventHandler> listener)
 							throws Exception {
-						listener.onStateChanged(flow, prev, next, causeEvent, causeArgs);
+						listener.onStateChanged(prev, next, causeEvent, causeArgs);
 					}});
     	}
     }
@@ -201,11 +197,11 @@ public abstract class AbstractFlow<FLOW>
         this._exectionLoop = exectionLoop;
     }
     
-	@Override
-	public Object getEndReason() throws Exception {
-		return _endreason;
+    @Override
+	public void setEndReasonAware(final EndReasonAware endReasonAware) {
+		this._endReasonAware = endReasonAware;
 	}
-
+    
 	protected EventReceiver	selfEventReceiver() {
 		return	this._receiver;
 	}
@@ -220,7 +216,7 @@ public abstract class AbstractFlow<FLOW>
 	}
 
 	protected void 	setEndReason(final Object endreason) {
-		this._endreason = endreason;
+		this._endReasonAware.setEndReason(endreason);
 	}
 	
 	protected ExectionLoop selfExectionLoop() {
@@ -229,13 +225,13 @@ public abstract class AbstractFlow<FLOW>
 	
 	private String			_event;
 	private EventHandler 	_handler;
-	private Object 			_endreason;
+	private EndReasonAware 	_endReasonAware;
 	private EventReceiver	_receiver;
 	private ExectionLoop    _exectionLoop;
 	
-	private final COWCompositeSupport<FlowLifecycleListener<FLOW>> _lifecycleSupport
+	private final COWCompositeSupport<FlowLifecycleListener> _lifecycleSupport
 		= new COWCompositeSupport<>();
-	private final COWCompositeSupport<FlowStateChangedListener<FLOW, EventHandler>> _stateChangedSupport
+	private final COWCompositeSupport<FlowStateChangedListener<EventHandler>> _stateChangedSupport
 		= new COWCompositeSupport<>();
 	private final ConcurrentMap<Class<?>, Object> _adapters = 
 			new ConcurrentHashMap<>();

@@ -7,10 +7,10 @@ package org.jocean.event.api;
  * @author isdom
  *
  */
-public interface FlowLifecycleListener<FLOW> {
+public interface FlowLifecycleListener {
 	
-	public void afterEventReceiverCreated(final FLOW flow, final EventReceiver receiver) 
+	public void afterEventReceiverCreated(final EventReceiver receiver) 
 			throws Exception;
 	
-	public void afterFlowDestroy(final FLOW flow) throws Exception;	
+	public void afterFlowDestroy() throws Exception;	
 }
