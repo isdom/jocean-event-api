@@ -17,6 +17,10 @@ import org.jocean.idiom.ReflectUtils;
  *
  */
 public class DefaultInvoker implements EventInvoker {
+    public static EventInvoker[] invokers(final Object target) {
+        return invokers(target, OnEvent.class);
+    }
+    
     public static EventInvoker[] invokers(final Object target, final Class<? extends Annotation> clsAnnotation) {
         if ( null == target ) {
             return null;
