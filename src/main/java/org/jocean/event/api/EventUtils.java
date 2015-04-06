@@ -36,8 +36,7 @@ public class EventUtils {
         return new EventReceiver() {
 
             @Override
-            public boolean acceptEvent(final String event, final Object... args)
-                    throws Exception {
+            public boolean acceptEvent(final String event, final Object... args) {
                 boolean handled = false;
                 for (EventReceiver receiver : receivers) {
                     try {
@@ -53,8 +52,7 @@ public class EventUtils {
             }
 
             @Override
-            public boolean acceptEvent(final Eventable eventable, final Object... args)
-                    throws Exception {
+            public boolean acceptEvent(final Eventable eventable, final Object... args) {
                 boolean handled = false;
                 for (EventReceiver receiver : receivers) {
                     try {
@@ -182,8 +180,8 @@ public class EventUtils {
             }
             
             if ( method.getDeclaringClass().equals(EventReceiver.class) ) {
-//                public boolean acceptEvent(final String event, final Object... args) throws Exception;
-//                public boolean acceptEvent(final Eventable eventable, final Object... args) throws Exception;
+//                public boolean acceptEvent(final String event, final Object... args);
+//                public boolean acceptEvent(final Eventable eventable, final Object... args);
                 return method.invoke(this._receiver, args);
             }
             

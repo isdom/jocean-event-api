@@ -11,7 +11,7 @@ import org.jocean.event.api.internal.Eventable;
  */
 public interface EventReceiver {
 	
-	public boolean acceptEvent(final String event, final Object... args) throws Exception;
+	public boolean acceptEvent(final String event, final Object... args);
 	
-    public boolean acceptEvent(final Eventable eventable, final Object... args) throws Exception;
+    public boolean acceptEvent(final Eventable eventable, final Object... args);
 }
