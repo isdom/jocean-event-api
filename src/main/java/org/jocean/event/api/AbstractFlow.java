@@ -9,7 +9,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import org.jocean.event.api.annotation.OnDelayed;
-import org.jocean.event.api.annotation.OnEvent;
 import org.jocean.event.api.internal.DefaultInvoker;
 import org.jocean.event.api.internal.EndReasonProvider;
 import org.jocean.event.api.internal.EventHandler;
@@ -87,11 +86,11 @@ public abstract class AbstractFlow<FLOW>
 	}
 	
     public EventInvoker[] handlersOf(final Object target) {
-        return DefaultInvoker.invokers(target, OnEvent.class);
+        return DefaultInvoker.invokers(target);
     }
     
     public EventInvoker[] delayedHandlersOf(final Object target) {
-        return DefaultInvoker.invokers(target, OnDelayed.class);
+        return DefaultInvoker.invokers(target, OnDelayed.class, null);
     }
     
     protected Detachable fireDelayEvent(final DelayEvent delayEvent) {

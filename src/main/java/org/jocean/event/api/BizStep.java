@@ -10,7 +10,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.jocean.event.api.annotation.OnDelayed;
-import org.jocean.event.api.annotation.OnEvent;
 import org.jocean.event.api.internal.DefaultInvoker;
 import org.jocean.event.api.internal.EventHandler;
 import org.jocean.event.api.internal.EventInvoker;
@@ -52,14 +51,14 @@ public class BizStep implements Cloneable, EventHandler {
     	this._name = name;
     	{
         	final EventInvoker[] handlers = 
-        	        DefaultInvoker.invokers(this, OnEvent.class);
+        	        DefaultInvoker.invokers(this);
         	if ( null != handlers && handlers.length > 0 ) {
         	    addHandlers(handlers);
         	}
     	}
     	{
             final EventInvoker[] delayedHandlers = 
-                    DefaultInvoker.invokers(this, OnDelayed.class);
+                    DefaultInvoker.invokers(this, OnDelayed.class, null);
             if ( null != delayedHandlers && delayedHandlers.length > 0 ) {
                 addDelayedHandlers(delayedHandlers);
             }
