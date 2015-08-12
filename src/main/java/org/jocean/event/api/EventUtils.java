@@ -22,6 +22,8 @@ import org.jocean.idiom.SimpleCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import rx.Observer;
+
 /**
  * @author isdom
  * 
@@ -201,5 +203,74 @@ public class EventUtils {
 
         private final EventReceiver _receiver;
         private final Class<Object> _cls;
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <T> Observer<? super T> receiver2observer(
+            final EventReceiver receiver,
+            final String onNext, 
+            final String onError, 
+            final String onCompleted
+            ) {
+        ClassLoader cl = Thread.currentThread().getContextClassLoader();
+        if (cl == null) {
+            cl = Observer.class.getClassLoader();
+        }
+        return (Observer<? super T>) Proxy.newProxyInstance(cl,
+                new Class<?>[]{Observer.class},
+                new ObserverHandler(receiver, onNext, onError, onCompleted));
+    }
+    
+    private static final class ObserverHandler implements InvocationHandler {
+        ObserverHandler(final EventReceiver receiver, 
+                final String onNext, 
+                final String onError, 
+                final String onCompleted) {
+            if (null == receiver) {
+                throw new NullPointerException("EventReceiver can't be null");
+            }
+            this._receiver = receiver;
+            this._onNext = onNext;
+            this._onError = onError;
+            this._onCompleted = onCompleted;
+        }
+
+        @Override
+        public Object invoke(final Object proxy, final Method method,
+                final Object[] args) throws Throwable {
+            // An invocation of the hashCode, equals, or toString methods
+            // declared in java.lang.Object on a proxy instance will be
+            // encoded and dispatched to the invocation handler's invoke
+            // method in the same manner as interface method invocations are
+            // encoded and dispatched, as described above. The declaring
+            // class of the Method object passed to invoke will be
+            // java.lang.Object. Other public methods of a proxy instance
+            // inherited from java.lang.Object are not overridden by a proxy
+            // class, so invocations of those methods behave like they do
+            // for instances of java.lang.Object.
+            if (method.getName().equals("hashCode")) {
+                return this._receiver.hashCode();
+            } else if (method.getName().equals("equals")) {
+                return (proxy == args[0]);
+            } else if (method.getName().equals("toString")) {
+                return this._receiver.toString();
+            }
+
+            if (method.getName().equals("onNext") && null != _onNext) {
+                _receiver.acceptEvent(_onNext, args);
+            } 
+            else if (method.getName().equals("onError") && null != _onError) {
+                _receiver.acceptEvent(_onError, args);
+            }
+            else if (method.getName().equals("onCompleted") && null != _onCompleted) {
+                _receiver.acceptEvent(_onCompleted, args);
+            }
+            return null;
+        }
+
+        private final EventReceiver _receiver;
+        private final String _onNext;
+        private final String _onError;
+        private final String _onCompleted;
     }
 }
