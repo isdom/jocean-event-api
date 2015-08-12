@@ -208,9 +208,7 @@ public class EventUtils {
     @SuppressWarnings("unchecked")
     public static <T> Observer<? super T> receiver2observer(
             final EventReceiver receiver,
-            final String onNext, 
-            final String onError, 
-            final String onCompleted
+            final String ...events
             ) {
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
         if (cl == null) {
@@ -218,21 +216,23 @@ public class EventUtils {
         }
         return (Observer<? super T>) Proxy.newProxyInstance(cl,
                 new Class<?>[]{Observer.class},
-                new ObserverHandler(receiver, onNext, onError, onCompleted));
+                new ObserverHandler(receiver, events));
     }
     
     private static final class ObserverHandler implements InvocationHandler {
         ObserverHandler(final EventReceiver receiver, 
-                final String onNext, 
-                final String onError, 
-                final String onCompleted) {
+                final String[] events) {
             if (null == receiver) {
                 throw new NullPointerException("EventReceiver can't be null");
             }
             this._receiver = receiver;
-            this._onNext = onNext;
-            this._onError = onError;
-            this._onCompleted = onCompleted;
+            this._onNext = safeGetEvent(events, 0);
+            this._onError = safeGetEvent(events, 1);
+            this._onCompleted = safeGetEvent(events, 2);
+        }
+
+        private static String safeGetEvent(final String[] events, int idx) {
+            return null != events ? (idx < events.length ? events[idx] : null ) : null;
         }
 
         @Override
