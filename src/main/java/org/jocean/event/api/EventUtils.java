@@ -14,7 +14,6 @@ import org.jocean.event.api.annotation.GuardReferenceCounted;
 import org.jocean.event.api.annotation.OnEvent;
 import org.jocean.event.api.internal.Eventable;
 import org.jocean.idiom.ExceptionUtils;
-import org.jocean.idiom.Function;
 import org.jocean.idiom.Pair;
 import org.jocean.idiom.PairedVisitor;
 import org.jocean.idiom.ReflectUtils;
@@ -23,6 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import rx.Observer;
+import rx.functions.Func1;
 
 /**
  * @author isdom
@@ -87,9 +87,9 @@ public class EventUtils {
             InvocationHandler {
         private static SimpleCache<Pair<Class<Object>, Method>, Object> _method2eventable = 
                 new SimpleCache<Pair<Class<Object>, Method>, Object>(
-            new Function<Pair<Class<Object>, Method>, Object>() {
+            new Func1<Pair<Class<Object>, Method>, Object>() {
             @Override
-            public Object apply(final Pair<Class<Object>, Method> input) {
+            public Object call(final Pair<Class<Object>, Method> input) {
                 final Method[] methods = input.first.getDeclaredMethods();
                 for ( Method m : methods ) {
                     if ( m.getName().equals(input.second.getName()) ) {
