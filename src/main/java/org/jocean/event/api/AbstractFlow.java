@@ -21,9 +21,10 @@ import org.jocean.idiom.Detachable;
 import org.jocean.idiom.ExceptionUtils;
 import org.jocean.idiom.ExectionLoop;
 import org.jocean.idiom.InterfaceSource;
-import org.jocean.idiom.Visitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import rx.functions.Action1;
 
 /**
  * @author isdom
@@ -139,10 +140,15 @@ public abstract class AbstractFlow<FLOW>
 		this._receiver = receiver;
     	if (!this._lifecycleSupport.isEmpty()) {
 			this._lifecycleSupport.foreachComponent(
-				new Visitor<FlowLifecycleListener>() {
+				new Action1<FlowLifecycleListener>() {
 					@Override
-					public void visit(final FlowLifecycleListener lifecycle) throws Exception {
-						lifecycle.afterEventReceiverCreated(receiver);
+					public void call(final FlowLifecycleListener lifecycle) {
+						try {
+                            lifecycle.afterEventReceiverCreated(receiver);
+                        } catch (Exception e) {
+                            LOG.warn("exception when invoke afterEventReceiverCreated for {}, detail: {}",
+                                    receiver, ExceptionUtils.exception2detail(e));
+                        }
 					}});
     	}
 	}
@@ -151,10 +157,15 @@ public abstract class AbstractFlow<FLOW>
 	public void afterFlowDestroy() throws Exception {
     	if (!this._lifecycleSupport.isEmpty()) {
 			this._lifecycleSupport.foreachComponent(
-				new Visitor<FlowLifecycleListener>() {
+				new Action1<FlowLifecycleListener>() {
 					@Override
-					public void visit(final FlowLifecycleListener lifecycle) throws Exception {
-						lifecycle.afterFlowDestroy();
+					public void call(final FlowLifecycleListener lifecycle) {
+						try {
+                            lifecycle.afterFlowDestroy();
+                        } catch (Exception e) {
+                            LOG.warn("exception when invoke {}.afterFlowDestroy, detail: {}",
+                                    lifecycle, ExceptionUtils.exception2detail(e));
+                        }
 					}});
     	}
 	}
@@ -181,12 +192,15 @@ public abstract class AbstractFlow<FLOW>
 			final Object[] 	causeArgs) throws Exception {
     	if (!this._stateChangedSupport.isEmpty()) {
 	    	this._stateChangedSupport.foreachComponent(
-				new Visitor<FlowStateChangedListener<EventHandler>>() {
+				new Action1<FlowStateChangedListener<EventHandler>>() {
 					@Override
-					public void visit(
-							final FlowStateChangedListener<EventHandler> listener)
-							throws Exception {
-						listener.onStateChanged(prev, next, causeEvent, causeArgs);
+					public void call(final FlowStateChangedListener<EventHandler> listener) {
+						try {
+                            listener.onStateChanged(prev, next, causeEvent, causeArgs);
+                        } catch (Exception e) {
+                            LOG.warn("exception when invoke {}.onStateChanged, detail: {}",
+                                    listener, ExceptionUtils.exception2detail(e));
+                        }
 					}});
     	}
     }
