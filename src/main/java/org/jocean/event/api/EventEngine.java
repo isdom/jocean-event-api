@@ -19,6 +19,7 @@ public interface EventEngine {
      *  EventNameAware, 
 		EventHandlerAware, 
 		EndReasonProvider,
+		EndReasonAware,
 		ExectionLoopAware,
 		FlowLifecycleListener, 
 		FlowStateChangedListener
@@ -26,6 +27,7 @@ public interface EventEngine {
      * @see EventNameAware
      * @see EventHandlerAware
      * @see EndReasonProvider
+     * @see EndReasonAware
      * @see ExectionLoopAware
      * @see FlowLifecycleListener
      * @see FlowStateChangedListener

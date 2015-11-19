@@ -3,6 +3,26 @@ jocean-event-api
 
 jocean's 异步事件库 API
 
+2015-11-19: release 0.0.7 版本:
+    1、依赖 idiom-0.1.3 release
+    2、replace VisitorX by ActionX, replace Function replace by Func1
+    3、从 jocean-j2se 中将 EventRegistry 迁移到 jocean-event-api，并更名为ReceiverRegistry
+    4、将 receiver2observer 方法签名更新为 变参形式传入事件参数
+    5、DefaultInvoker.invokers支持传入事件后缀suffix参数，添加在OnEvent注解表示的事件后，构成完整的绑定事件
+    6、精简EventEngine接口:去掉createFromInnerState接口;改变create方法签名，添加参数name,用来指定EventReceiver名字(调试用途),而原来的flow不再是必选参数，可提供0个或多个reactors，reactor可实现
+        EventNameAware, 
+        EventHandlerAware,
+        EndReasonProvider,
+        EndReasonAware,
+        ExectionLoopAware,
+        FlowLifecycleListener,
+        FlowStateChangedListener接口
+    7、interface rename: EventReceiverSource
+    8、新增 FlowStateChangedListener
+    9、add constant BizStep: CURRENT_BIZSTEP, 当 flow的业务处理方法返回该常量时，代表不改变当前的BizStep(EventHandler)
+    10、新增 GuardPaired 注解，自动化 PairedVisitor 实例在 事件机制中的使用 — 马明 (ming.ma) / githubweb
+    11、使用 gradle 构建
+    
 2014-09-30： release 0.0.6 版本：
   1、添加异常EventUnhandleException，用于在事件处理方法中，不再进行当前事件处理的情况下，则可以抛出该异常。如果当前事件是通过实现了EventUnhandleAware接口的Eventable发射的，则事件框架会在稍后调用其对应的onEventUnhandle接口方法
   2、在EventUtils.buildInterfaceAdapter 实现中，处理Thread.currentThread().getContextClassLoader() 返回为 null 的情况，直接使用 intf.getClassLoader()。
